@@ -8,67 +8,68 @@ import { isValidEmail, extractMentions } from "../utils/helpers.js";
  * POST /api/register
  */
 const registerStudents = async (req, res) => {
-  const transaction = await sequelize.transaction();
-
   try {
     const { teacher, students } = req.body;
 
     // Validation
     if (!teacher || !students || !Array.isArray(students) || students.length === 0) {
-      await transaction.rollback();
       return res.status(400).json({
         message: "Invalid request. Teacher email and student emails array are required.",
       });
     }
 
-    // Validate email format
+    // Validate all emails upfront (fail fast)
     if (!isValidEmail(teacher)) {
-      await transaction.rollback();
       return res.status(400).json({ message: "Invalid teacher email format." });
     }
 
-    for (const studentEmail of students) {
-      if (!emailRegex.test(studentEmail)) {
-        await transaction.rollback();
-        return res.status(400).json({
-          message: `Invalid student email format: ${studentEmail}`,
+    const invalidEmails = students.filter((email) => !isValidEmail(email));
+    if (invalidEmails.length > 0) {
+      return res.status(400).json({
+        message: `Invalid student email format: ${invalidEmails.join(", ")}`,
+      });
+    }
+
+    // Start transaction only after validation passes
+    const transaction = await sequelize.transaction();
+
+    try {
+      // Find or create teacher
+      const [teacherRecord] = await Teacher.findOrCreate({
+        where: { email: teacher },
+        defaults: { email: teacher },
+        transaction,
+      });
+
+      // Find or create students and register them
+      for (const studentEmail of students) {
+        const [studentRecord] = await Student.findOrCreate({
+          where: { email: studentEmail },
+          defaults: { email: studentEmail, isSuspended: false },
+          transaction,
+        });
+
+        // Create registration (ignore if already exists)
+        await Registration.findOrCreate({
+          where: {
+            teacherId: teacherRecord.id,
+            studentId: studentRecord.id,
+          },
+          defaults: {
+            teacherId: teacherRecord.id,
+            studentId: studentRecord.id,
+          },
+          transaction,
         });
       }
+
+      await transaction.commit();
+      res.status(204).send();
+    } catch (error) {
+      await transaction.rollback();
+      throw error;
     }
-
-    // Find or create teacher
-    const [teacherRecord] = await Teacher.findOrCreate({
-      where: { email: teacher },
-      defaults: { email: teacher },
-      transaction,
-    });
-
-    // Find or create students and register them
-    for (const studentEmail of students) {
-      const [studentRecord] = await Student.findOrCreate({
-        where: { email: studentEmail },
-        defaults: { email: studentEmail, isSuspended: false },
-        transaction,
-      });
-
-      // Create registration (ignore if already exists)
-      await Registration.findOrCreate({
-        where: {
-          teacherId: teacherRecord.id,
-          studentId: studentRecord.id,
-        },
-        defaults: {
-          teacherId: teacherRecord.id,
-          studentId: studentRecord.id,
-        },
-        transaction,
-      });
-    }
-
-    await transaction.commit();
-    res.status(204).send();
   } catch (error) {
-    await transaction.rollback();
     console.error("Error in registerStudents:", error);
     res.status(500).json({ message: `An error occurred while registering students: ${error.message}` });
   }
