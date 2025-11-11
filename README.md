@@ -10,18 +10,15 @@ A RESTful API for teachers to manage students. Built with **TypeScript**, Node.j
 - ✅ Suspend students
 - ✅ Retrieve notification recipients (registered + @mentioned students)
 - ✅ **Joi validation** for request validation
-- ✅ **Service layer architecture** for clean separation of concerns
 - ✅ **Database migrations** with Sequelize CLI
-- ✅ **Case-insensitive email handling**
 - ✅ **Unit and integration tests** with Jest
-- ✅ Auto-creates database and tables on startup
+- ✅ Auto-creates database on startup
 
 ## 📋 Prerequisites
 
 - Node.js v18+
 - MySQL v5.7+
 - npm or yarn
-- TypeScript knowledge (recommended)
 
 ## 🚀 Quick Start
 
@@ -47,32 +44,27 @@ A RESTful API for teachers to manage students. Built with **TypeScript**, Node.j
    DB_NAME=teacher_student_db
    ```
 
-3. **Development with TypeScript:**
+3. **Setup database (first time only):**
 
    ```bash
-   # Run in development mode (with auto-reload)
-   yarn dev
-
-   # Type check without compiling
-   yarn typecheck
-
-   # Build for production
-   yarn build
-
-   # Run production build
-   yarn start
+   # Create database and run migrations (one command!)
+   yarn db:setup
    ```
 
-4. **Run database migrations (optional - auto-creates on startup):**
+   Or run separately:
 
    ```bash
+   # Create database only
+   yarn db:create
+
+   # Run migrations only
    yarn db:migrate
    ```
 
-5. **Start the server:**
+4. **Start the server:**
 
    ```bash
-   # Development mode
+   # Development mode (with auto-reload)
    yarn dev
 
    # Or build and run production
@@ -80,20 +72,18 @@ A RESTful API for teachers to manage students. Built with **TypeScript**, Node.j
    yarn start
    ```
 
-   The app will automatically:
+   Server starts on `http://localhost:5001`
 
-   - Create the database if it doesn't exist
-   - Create tables from models
-   - Start on `http://localhost:5001`
+**Note:** After first setup, you only need `yarn dev` to start. Run `yarn db:migrate` only when there are new schema changes.
 
-## 📚 TypeScript Migration
+**Commands:**
 
-This project is now fully written in **TypeScript**! See [TYPESCRIPT_MIGRATION.md](./TYPESCRIPT_MIGRATION.md) for:
-
-- Migration details and benefits
-- Type definitions documentation
-- Development workflow
-- Best practices
+```bash
+yarn dev          # Development with auto-reload
+yarn build        # Compile TypeScript to JavaScript
+yarn start        # Run production build
+yarn typecheck    # Type check without compiling
+```
 
 ## API Endpoints
 
@@ -199,8 +189,6 @@ yarn test -- tests/unit
 yarn test -- tests/integration
 ```
 
-**Note:** Tests now run with ts-jest for TypeScript support.
-
 Tests automatically use a separate `teacher_student_db_test` database to protect your development data.
 
 ## 📁 Project Structure
@@ -262,15 +250,46 @@ migrations/               # Database migrations
 
 ## 🗄️ Database Migrations
 
-```bash
-# Run migrations
-yarn db:migrate
+**Important:** Database schema is managed via migrations, NOT auto-sync.
 
-# Undo last migration
-yarn db:migrate:undo
+```bash
+# Development (default)
+yarn db:setup         # Create database + run migrations
+yarn db:create        # Create database only
+yarn db:migrate       # Run migrations (also creates DB if needed)
+
+# Test environment
+yarn db:setup:test    # Create test database + run migrations
+yarn db:create:test   # Create test database only
+yarn db:migrate:test  # Run migrations for test DB
+
+# Production
+yarn db:setup:prod    # Create production database + run migrations
+yarn db:create:prod   # Create production database only
+yarn db:migrate:prod  # Run migrations for production DB
+
+# Rollback migrations
+yarn db:migrate:undo       # Undo last migration
+yarn db:migrate:undo:all   # Undo all migrations
 ```
 
-See [migrations/README.md](migrations/README.md) for details.
+**Or use NODE_ENV directly:**
+
+```bash
+# Any environment
+NODE_ENV=test node scripts/create-database.cjs
+NODE_ENV=production npx sequelize-cli db:migrate
+```
+
+**Workflow:**
+
+- **First time setup:**
+  1. Run `yarn db:setup` (creates database + runs migrations)
+  2. Start server (`yarn dev`)
+- **Different environment:** Use `yarn db:setup:test` or `yarn db:setup:prod`
+- **Schema changes:** Create new migration file, then run `yarn db:migrate`
+- **Normal startup:** Just `yarn dev` (database & tables already exist)
+- **Server behavior:** Only connects to DB, no auto-sync
 
 ## Database Schema
 

@@ -5,30 +5,6 @@ const env = process.env.NODE_ENV || "development";
 const dbConfig: DatabaseConfig = config[env];
 
 /**
- * Create database if it doesn't exist
- */
-const createDatabaseIfNotExists = async (): Promise<void> => {
-    const tempSequelize = new Sequelize({
-        host: dbConfig.host,
-        port: dbConfig.port,
-        dialect: dbConfig.dialect,
-        username: dbConfig.username,
-        password: dbConfig.password,
-        logging: false,
-    });
-
-    try {
-        await tempSequelize.query(`CREATE DATABASE IF NOT EXISTS \`${dbConfig.database}\`;`);
-        console.log(`✓ Database '${dbConfig.database}' is ready.`);
-        await tempSequelize.close();
-    } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : String(error);
-        console.error("✗ Error creating database:", errorMessage);
-        await tempSequelize.close();
-    }
-};
-
-/**
  * Sequelize instance
  */
 const sequelize = new Sequelize(dbConfig.database, dbConfig.username, dbConfig.password, {
@@ -40,24 +16,22 @@ const sequelize = new Sequelize(dbConfig.database, dbConfig.username, dbConfig.p
 });
 
 /**
- * Test database connection and sync models
+ * Test database connection
+ * Note: Database and tables are managed via migrations
+ * Run 'npm run db:setup' for first time setup
  */
 const testConnection = async (): Promise<boolean> => {
     try {
-        await createDatabaseIfNotExists();
         await sequelize.authenticate();
         console.log("✓ Database connection has been established successfully.");
-
-        // Sync models to create tables if they don't exist
-        await sequelize.sync();
-        console.log("✓ Database tables have been synchronized.");
 
         return true;
     } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
         console.error("✗ Unable to connect to the database:", errorMessage);
+        console.error("✗ Please run 'npm run db:setup' to create database and tables.");
         return false;
     }
 };
 
-export { sequelize, testConnection, createDatabaseIfNotExists };
+export { sequelize, testConnection };

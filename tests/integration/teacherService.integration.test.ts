@@ -1,9 +1,36 @@
 import { jest } from "@jest/globals";
+import { Sequelize } from "sequelize";
 import teacherService from "../../src/services/teacherService.js";
 import { Teacher, Student, Registration } from "../../src/models/index.js";
 import { sequelize } from "../../src/config/index.js";
+import config from "../../src/config/database.js";
 
 describe("Integration Tests - Teacher Service", () => {
+    // Setup database and tables before all tests
+    beforeAll(async () => {
+        const dbConfig = config.test;
+
+        // Create database if not exists
+        const tempSequelize = new Sequelize({
+            host: dbConfig.host,
+            port: dbConfig.port,
+            dialect: dbConfig.dialect,
+            username: dbConfig.username,
+            password: dbConfig.password,
+            logging: false,
+        });
+
+        try {
+            await tempSequelize.query(`CREATE DATABASE IF NOT EXISTS \`${dbConfig.database}\`;`);
+            await tempSequelize.close();
+        } catch (error) {
+            await tempSequelize.close();
+        }
+
+        // Sync tables
+        await sequelize.sync({ force: true });
+    });
+
     // Clean up database before each test
     beforeEach(async () => {
         await Registration.destroy({ where: {}, force: true });

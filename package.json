@@ -10,9 +10,11 @@
     "dev": "nodemon",
     "test": "NODE_ENV=test NODE_OPTIONS='--experimental-vm-modules' jest --coverage --verbose --runInBand",
     "test:watch": "NODE_ENV=test NODE_OPTIONS='--experimental-vm-modules' jest --watch --runInBand",
-    "db:migrate": "npx sequelize-cli db:migrate",
+    "db:create": "node scripts/create-database.cjs",
+    "db:migrate": "node scripts/create-database.cjs && npx sequelize-cli db:migrate",
     "db:migrate:undo": "npx sequelize-cli db:migrate:undo",
     "db:migrate:undo:all": "npx sequelize-cli db:migrate:undo:all",
+    "db:setup": "node scripts/create-database.cjs && npx sequelize-cli db:migrate",
     "typecheck": "tsc --noEmit"
   },
   "keywords": [
