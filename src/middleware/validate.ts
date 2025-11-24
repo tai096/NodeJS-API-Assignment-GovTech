@@ -20,7 +20,7 @@ const validate = (schema: Joi.ObjectSchema, property: "body" | "query" = "body")
             });
         }
 
-        // For body, we can replace it. For query, we need to be more careful
+        // For body, make sure the data is cleaned and set to request body
         if (property === "body") {
             req.body = value;
         } else if (property === "query") {

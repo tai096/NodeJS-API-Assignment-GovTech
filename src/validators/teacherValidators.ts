@@ -5,7 +5,7 @@ import Joi from "joi";
  */
 
 // Reusable email schema
-const emailValidation = Joi.string().email().lowercase();
+const emailValidation = Joi.string().trim().email().lowercase();
 
 // Reusable schemas with custom messages
 const teacherEmailValidation = emailValidation.required().messages({
